@@ -42,9 +42,9 @@ CSRF_TRUSTED_ORIGINS = [
 CORS_ALLOWED_ORIGINS = [
     "https://offplanmarket.vercel.app",
     "http://localhost:3000",  # for development
-    "https://offplan-backend.onrender.com"
 ]
 
+CORS_ALLOW_CREDENTIALS = True
 
 # Application definition
 
