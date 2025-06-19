@@ -109,6 +109,12 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ALLOWED_HOSTS = [
+    "offplan-backend.onrender.com",  # ✅ Your Render service URL
+    "localhost",                     # optional for local dev
+    "127.0.0.1"
+]
+
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
