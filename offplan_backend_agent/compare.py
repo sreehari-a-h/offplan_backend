@@ -9,7 +9,7 @@ django.setup()
 
 from api.models import Property
 
-API_KEY = "27b84afeeef929815ab080ae22b29383"
+API_KEY = os.environ.get("ESTATY_API_KEY")
 HEADERS = {
     "App-key": API_KEY,
     "Content-Type": "application/json",
