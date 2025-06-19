@@ -1,0 +1,66 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg
+*.egg-info/
+dist/
+build/
+*.log
+*.pot
+*.pyc
+*.pyo
+*.pyd
+*.sqlite3
+
+# Virtual Environment
+venv/
+env/
+ENV/
+.venv/
+
+# Django specific
+*.db
+*.sqlite3
+media/
+staticfiles/
+static_root/
+*.log
+
+# Django migrations (optional if auto-generated)
+**/migrations/*.pyc
+**/migrations/__pycache__/
+# Comment below line if you want to keep migration files
+**/migrations/*.py
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Pycharm
+.idea/
+
+# Environment variables and secrets
+.env
+.env.*
+
+# Coverage reports
+htmlcov/
+.coverage
+.tox/
+.nox/
+coverage.xml
+
+# Test results
+.junit/
+.test/
+
+# System files
+*.swp
+*.swo
