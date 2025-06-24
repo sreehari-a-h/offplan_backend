@@ -113,21 +113,32 @@ def update_property(item):
         id=item["id"],
         defaults={
             "title": item.get("title"),
+            "description": item.get("description"),
             "cover": item.get("cover"),
             "address": item.get("address"),
             "address_text": item.get("address_text"),
-            "delivery_date": int(item["delivery_date"]) if item.get("delivery_date") else None,
-            "min_area": item.get("min_area"),
-            "low_price": item.get("low_price"),
+            "delivery_date": item.get("delivery_date"),
             "city": city,
             "district": district,
             "developer": developer,
             "property_type": property_type,
             "property_status": property_status,
             "sales_status": sales_status,
+            "completion_rate": item.get("completion_rate"),
+            "residential_units": item.get("residential_units"),
+            "commercial_units": item.get("commercial_units"),
+            "payment_plan": item.get("payment_plan"),
+            "post_delivery": item.get("post_delivery", False),
+            "payment_minimum_down_payment": item.get("payment_minimum_down_payment"),
+            "guarantee_rental_guarantee": item.get("guarantee_rental_guarantee", False),
+            "guarantee_rental_guarantee_value": item.get("guarantee_rental_guarantee_value"),
+            "downPayment": item.get("downPayment"),
+            "low_price": item.get("low_price"),
+            "min_area": item.get("min_area"),
             "updated_at": parse_external_datetime(item["updated_at"]) if item.get("updated_at") else None,
         }
     )
+
 
 
 def full_sync_all_pages():

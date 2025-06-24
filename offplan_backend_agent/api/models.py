@@ -1,8 +1,6 @@
 from django.db import models
 
-
 class City(models.Model):
-    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
 
     def __str__(self):
@@ -10,20 +8,19 @@ class City(models.Model):
 
 
 class District(models.Model):
-    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=100)
-    city = models.ForeignKey(City, on_delete=models.CASCADE)
+    city = models.ForeignKey(City, on_delete=models.CASCADE, related_name='districts')
 
     def __str__(self):
         return self.name
 
 
 class DeveloperCompany(models.Model):
-    id = models.IntegerField(primary_key=True)
     name = models.CharField(max_length=255)
 
     def __str__(self):
         return self.name
+
 
 class PropertyType(models.Model):
     name = models.CharField(max_length=100)
@@ -45,8 +42,13 @@ class SalesStatus(models.Model):
     def __str__(self):
         return self.name
 
+
 class Facility(models.Model):
     name = models.CharField(max_length=100)
+
+    def __str__(self):
+        return self.name
+
 
 class Property(models.Model):
     title = models.CharField(max_length=255)
@@ -54,19 +56,19 @@ class Property(models.Model):
     cover = models.URLField(blank=True, null=True)
     address = models.CharField(max_length=255, blank=True, null=True)
     address_text = models.CharField(max_length=255, blank=True, null=True)
-    delivery_date = models.CharField(max_length=50, blank=True, null=True)
+    delivery_date = models.BigIntegerField(blank=True, null=True)  # UNIX timestamp
 
-    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True)
-    district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True)
-    developer = models.ForeignKey(DeveloperCompany, on_delete=models.SET_NULL, null=True)
-    property_type = models.ForeignKey(PropertyType, on_delete=models.SET_NULL, null=True)
-    property_status = models.ForeignKey(PropertyStatus, on_delete=models.SET_NULL, null=True)
-    sales_status = models.ForeignKey(SalesStatus, on_delete=models.SET_NULL, null=True)
+    city = models.ForeignKey(City, on_delete=models.SET_NULL, null=True, related_name='properties')
+    district = models.ForeignKey(District, on_delete=models.SET_NULL, null=True, related_name='properties')
+    developer = models.ForeignKey(DeveloperCompany, on_delete=models.SET_NULL, null=True, related_name='properties')
+    property_type = models.ForeignKey(PropertyType, on_delete=models.SET_NULL, null=True, related_name='properties')
+    property_status = models.ForeignKey(PropertyStatus, on_delete=models.SET_NULL, null=True, related_name='properties')
+    sales_status = models.ForeignKey(SalesStatus, on_delete=models.SET_NULL, null=True, related_name='properties')
 
     completion_rate = models.IntegerField(default=0, blank=True, null=True)
     residential_units = models.IntegerField(default=0, blank=True, null=True)
     commercial_units = models.IntegerField(default=0, blank=True, null=True)
-    payment_plan = models.IntegerField(default=0)
+    payment_plan = models.IntegerField(default=0, null=True, blank=True)
     post_delivery = models.BooleanField(default=False)
     payment_minimum_down_payment = models.IntegerField(default=0, blank=True, null=True)
     guarantee_rental_guarantee = models.BooleanField(default=False)
@@ -75,12 +77,13 @@ class Property(models.Model):
     low_price = models.BigIntegerField(blank=True, null=True)
     min_area = models.IntegerField(blank=True, null=True)
 
-    updated_at = models.DateTimeField(auto_now=True)
+    updated_at = models.DateTimeField(blank=True, null=True)
 
     def __str__(self):
         return self.title
 
-
+    class Meta:
+        ordering = ['-updated_at']
 
 
 class PropertyImage(models.Model):
@@ -88,21 +91,35 @@ class PropertyImage(models.Model):
     image = models.URLField()
     type = models.IntegerField()  # 1 = floorplan, 2 = gallery, etc.
 
+    def __str__(self):
+        return f"Image for {self.property.title}"
 
 
 class PropertyFacility(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='property_facilities')
     facility = models.ForeignKey(Facility, on_delete=models.CASCADE)
 
+    def __str__(self):
+        return f"{self.property.title} - {self.facility.name}"
+
+
 class PaymentPlan(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name='payment_plans')
     name = models.CharField(max_length=255)
     description = models.CharField(max_length=255)
 
+    def __str__(self):
+        return f"{self.name} for {self.property.title}"
+
+
 class PaymentPlanValue(models.Model):
     property_payment_plan = models.ForeignKey(PaymentPlan, on_delete=models.CASCADE, related_name='values')
     name = models.CharField(max_length=255)
     value = models.CharField(max_length=20)
+
+    def __str__(self):
+        return f"{self.name}: {self.value}"
+
 
 class GroupedApartment(models.Model):
     property = models.ForeignKey(Property, on_delete=models.CASCADE, related_name="grouped_apartments")
@@ -113,6 +130,7 @@ class GroupedApartment(models.Model):
 
     def __str__(self):
         return f"{self.unit_type} - {self.rooms}"
+
 
 class AgentDetails(models.Model):
     id = models.BigAutoField(primary_key=True)
@@ -133,8 +151,8 @@ class AgentDetails(models.Model):
 
     class Meta:
         db_table = 'agent_details'
-        unique_together = ('id', 'username')  # Matches composite PK in Supabase
-        managed = False 
+        unique_together = ('id', 'username')  # If matching composite PK in Supabase
+        managed = False  # Since you're syncing from external DB
 
     def __str__(self):
         return self.username
