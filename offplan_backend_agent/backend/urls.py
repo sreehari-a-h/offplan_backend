@@ -33,6 +33,7 @@ from api.views.property_status_counts import PropertyStatusCountView
 from api.views.property_city_count import PropertyByStatusView
 from api.views.consultation import ConsultationView
 from api.views.subscription import SubscribeView
+from api.views.developers_list import DeveloperListView
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -67,4 +68,5 @@ urlpatterns = [
     path('properties/city/count/', PropertyByStatusView.as_view(), name='property-city-wise-count'),
     path('consultation',ConsultationView.as_view(),name='consultation_details'),
     path('subscribe/', SubscribeView.as_view(), name='subscribe'),
+    path('developers/', DeveloperListView.as_view(), name='developer-list'),
 ]
