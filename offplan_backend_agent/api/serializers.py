@@ -1,6 +1,14 @@
 from rest_framework import serializers
 from .models import AgentDetails, Property
-from api.models import Property, City, District, DeveloperCompany
+from api.models import Property, City, District, DeveloperCompany, Consultation, Subscription
+
+class CitySerializerWithDistricts(serializers.ModelSerializer):
+    districts = serializers.SerializerMethodField()
+    class Meta:
+        model = City
+        fields = ["id", "name","districts"]
+    def get_districts(self,obj):
+        return [district.name for district in obj.districts.all()] 
 
 class CitySerializer(serializers.ModelSerializer):
     class Meta:
@@ -37,3 +45,13 @@ class AgentDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = AgentDetails
         fields = '__all__'
+
+class ConsultationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Consultation
+        fields = '__all__'
+
+class SubscriptionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Subscription
+        fields = ['email']

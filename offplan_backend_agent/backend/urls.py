@@ -30,6 +30,9 @@ from api.views.agent_register import AgentRegisterView
 from api.views.agent_update import AgentUpdateView
 from api.views.agent_delete import AgentDeleteView
 from api.views.property_status_counts import PropertyStatusCountView
+from api.views.property_city_count import PropertyByStatusView
+from api.views.consultation import ConsultationView
+from api.views.subscription import SubscribeView
 
 schema_view = get_schema_view(
    openapi.Info(
@@ -61,4 +64,7 @@ urlpatterns = [
     path('agent/delete/<int:id>/', AgentDeleteView.as_view(), name='agent-delete'),
     path('agents/list/', AgentListView.as_view(), name='agent-list'),
     path('properties/status-counts/', PropertyStatusCountView.as_view(), name='property-status-counts'),
+    path('properties/city/count/', PropertyByStatusView.as_view(), name='property-city-wise-count'),
+    path('consultation',ConsultationView.as_view(),name='consultation_details'),
+    path('subscribe/', SubscribeView.as_view(), name='subscribe'),
 ]

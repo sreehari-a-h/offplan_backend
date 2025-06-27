@@ -156,3 +156,20 @@ class AgentDetails(models.Model):
 
     def __str__(self):
         return self.username
+
+class Consultation(models.Model):
+    full_name=models.CharField(max_length=20)
+    email=models.CharField(max_length=20)
+    phone_number=models.CharField(max_length=12)
+    message=models.TextField(null=True)    
+    created_at = models.DateTimeField(auto_now_add=True,null=True)
+    
+    def __str__(self):
+        return self.full_name
+        
+class Subscription(models.Model):
+    email = models.EmailField(unique=True)
+    subscribed_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.email

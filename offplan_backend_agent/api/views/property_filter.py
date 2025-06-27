@@ -27,7 +27,10 @@ class FilterPropertiesView(APIView):
                 'min_area': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'max_area': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'property_status': openapi.Schema(type=openapi.TYPE_STRING),
-                'sales_status': openapi.Schema(type=openapi.TYPE_STRING),  # <-- New field
+                'sales_status': openapi.Schema(type=openapi.TYPE_STRING),
+                'delivery_date': openapi.Schema(type=openapi.TYPE_STRING),
+                'title': openapi.Schema(type=openapi.TYPE_STRING),
+                'developer': openapi.Schema(type=openapi.TYPE_STRING),
             },
         )
     )
@@ -68,6 +71,15 @@ class FilterPropertiesView(APIView):
 
         if sales_status := data.get("sales_status"):
             queryset = queryset.filter(sales_status__name__icontains=sales_status)
+        
+        if delivery_date := data.get("delivery_date"):
+            queryset = queryset.filter(delivery_date__icontains=delivery_date)  
+        
+        if title := data.get("title"):
+            queryset = queryset.filter(title__icontains=title)
+        
+        if developer :=  data.get("developer"):
+            queryset = queryset.filter(developer__name__icontains=developer)
 
         paginator = CustomPagination()
         paginator.request = request
