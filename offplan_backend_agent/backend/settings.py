@@ -46,6 +46,7 @@ CORS_ALLOWED_ORIGINS = [
     "https://offplanmarket.vercel.app",
     "http://localhost:3000",  # for development
     "https://offplan-backend.onrender.com",
+    "http://offplan-backend.onrender.com",
 ]
 
 
