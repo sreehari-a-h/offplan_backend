@@ -32,7 +32,6 @@ class PropertyByStatusView(APIView):
                 "errors": None
             }, status=status.HTTP_200_OK)
 
-        # Safely attempt to match either status
         property_status = PropertyStatus.objects.filter(name__iexact=status_name).first()
         sales_status = SalesStatus.objects.filter(name__iexact=status_name).first()
 
@@ -44,20 +43,19 @@ class PropertyByStatusView(APIView):
                 "errors": None
             }, status=status.HTTP_404_NOT_FOUND)
 
-        # Filter properties based on which status matched
         if property_status:
             properties = Property.objects.filter(property_status=property_status)
         else:
             properties = Property.objects.filter(sales_status=sales_status)
 
-        # Group by city
+        # ✅ Updated part: Group, filter, and sort by property_count
         city_data = (
             properties.values('city__id', 'city__name')
             .annotate(property_count=Count('id'))
-            .order_by('city__name')
+            .filter(property_count__gte=3)
+            .order_by('-property_count')
         )
 
-        # Build response
         results = []
         for city in city_data:
             results.append({
@@ -72,4 +70,4 @@ class PropertyByStatusView(APIView):
             "message": f"Properties filtered by status '{status_name}'",
             "data": results,
             "errors": None
-        },status=status.HTTP_200_OK)
+        }, status=status.HTTP_200_OK)
