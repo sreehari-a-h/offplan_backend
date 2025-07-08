@@ -10,7 +10,7 @@ from .properties_list import CustomPagination
 
 import calendar
 from datetime import datetime
-
+from django.db.models import Case, When, Value, IntegerField, Q
 
 class FilterPropertiesView(APIView):
     permission_classes = [AllowAny]
@@ -31,6 +31,7 @@ class FilterPropertiesView(APIView):
                 'max_area': openapi.Schema(type=openapi.TYPE_INTEGER),
                 'property_status': openapi.Schema(type=openapi.TYPE_STRING),
                 'sales_status': openapi.Schema(type=openapi.TYPE_STRING),
+                'title': openapi.Schema(type=openapi.TYPE_STRING, description="Filter by title"),
             },
         )
     )
@@ -38,6 +39,7 @@ class FilterPropertiesView(APIView):
         data = request.data
         queryset = Property.objects.all()
 
+        # Existing filters
         if city := data.get("city"):
             queryset = queryset.filter(city__name__icontains=city)
 
@@ -59,24 +61,18 @@ class FilterPropertiesView(APIView):
                 start_dt = datetime(year, 1, 1, 0, 0, 0)
                 start_unix = calendar.timegm(start_dt.utctimetuple())
 
-                # Special handling based on year
                 if year < 2030:
-                    # Get end of year (Dec 31, 23:59:59)
                     end_dt = datetime(year, 12, 31, 23, 59, 59)
                     end_unix = calendar.timegm(end_dt.utctimetuple())
-
                     queryset = queryset.filter(
                         delivery_date__gte=start_unix,
                         delivery_date__lte=end_unix
                     )
                 else:
-                    # For 2030 and beyond: year and above
                     queryset = queryset.filter(delivery_date__gte=start_unix)
 
             except ValueError:
                 pass  # Ignore invalid input
-
-
 
         if min_price := data.get("min_price"):
             queryset = queryset.filter(low_price__gte=min_price)
@@ -93,6 +89,22 @@ class FilterPropertiesView(APIView):
 
         if sales_status := data.get("sales_status"):
             queryset = queryset.filter(sales_status__name__icontains=sales_status)
+
+        # 🆕 Title filtering with prioritization
+        if title := data.get("title"):
+            queryset = queryset.annotate(
+                # Priority: 0 if exact match, 1 if contains, 2 otherwise
+                title_priority=Case(
+                    When(title__iexact=title, then=Value(0)),
+                    When(title__icontains=title, then=Value(1)),
+                    default=Value(2),
+                    output_field=IntegerField(),
+                )
+            ).filter(
+                Q(title__icontains=title)
+            ).order_by('title_priority', '-updated_at')
+        else:
+            queryset = queryset.order_by("-updated_at")
 
         paginator = CustomPagination()
         paginator.request = request

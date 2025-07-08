@@ -1,6 +1,7 @@
 from rest_framework import serializers
 from .models import AgentDetails, Property
 from api.models import Property, City, District, DeveloperCompany, Consultation, Subscription
+from django.db.models import Sum
 
 class CitySerializerWithDistricts(serializers.ModelSerializer):
     districts = serializers.SerializerMethodField()
@@ -30,6 +31,7 @@ class PropertySerializer(serializers.ModelSerializer):
     city = CitySerializer()
     district = DistrictSerializer()
     developer = DeveloperCompanySerializer()
+    subunit_count = serializers.SerializerMethodField()
 
     class Meta:
         model = Property
@@ -37,8 +39,23 @@ class PropertySerializer(serializers.ModelSerializer):
             "id", "title", "cover", "address", "address_text",
             "delivery_date", "min_area", "low_price",
             "property_type", "property_status", "sales_status",
-            "updated_at", "city", "district", "developer"
+            "updated_at", "city", "district", "developer","subunit_count",
         ]
+    
+    def get_subunit_count(self, obj):
+        total_subunits = getattr(obj, "subunit_count", None)
+        if total_subunits is None:
+            # fallback if not annotated
+            total_subunits = obj.property_units.aggregate(
+                total=Sum('unit_count')
+            )['total'] or 0
+
+        if total_subunits <= 1:
+            return "1 unit"
+        elif total_subunits > 9:
+            return "9+ units"
+        else:
+            return f"{total_subunits} units"
 
 
 class AgentDetailSerializer(serializers.ModelSerializer):

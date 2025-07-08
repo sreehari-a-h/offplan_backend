@@ -6,6 +6,7 @@ from rest_framework.request import Request
 from django.urls import reverse
 from api.models import Property
 from api.serializers import PropertySerializer
+from django.db.models import Sum
 
 
 class CustomPagination(PageNumberPagination):
@@ -33,9 +34,12 @@ class PropertyListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request: Request):
-        properties = Property.objects.order_by("-updated_at")
+        # Annotate each property with total unit count
+        properties = Property.objects.annotate(
+            subunit_count=Sum('property_units__unit_count')
+        )
         paginator = CustomPagination()
         paginator.request = request
         paginated_qs = paginator.paginate_queryset(properties, request)
-        serializer = PropertySerializer(paginated_qs, many=True)
+        serializer = PropertySerializer(paginated_qs, many=True, context={'request': request})
         return paginator.get_paginated_response(serializer.data)

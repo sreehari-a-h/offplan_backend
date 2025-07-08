@@ -1,6 +1,8 @@
 from rest_framework import serializers
 from .models import Property, City, District, DeveloperCompany
-from .models import Facility, PropertyImage, PropertyFacility, PaymentPlan, PaymentPlanValue, GroupedApartment, PropertyUnit  # adjust imports as per your structure
+from .models import Facility, PropertyImage, PropertyFacility, PaymentPlan, PaymentPlanValue, GroupedApartment, PropertyUnit
+from . import models  # adjust imports as per your structure
+from django.db.models import Sum
 
 class PropertyUnitSerializer(serializers.ModelSerializer):
     class Meta:
@@ -121,6 +123,43 @@ class PropertySerializer(serializers.ModelSerializer):
     facilities = FacilitySerializer(many=True, read_only=True)
     payment_plans = PaymentPlanSerializer(many=True, read_only=True)
 
+    # 👇 Add computed field
+    subunit_count = serializers.SerializerMethodField()
+
     class Meta:
         model = Property
-        fields = '__all__'
+        fields = [
+            'id',
+            'title',
+            'cover',
+            'address',
+            'address_text',
+            'delivery_date',
+            'min_area',
+            'low_price',
+            'property_type',
+            'property_status',
+            'sales_status',
+            'updated_at',
+            'city',
+            'district',
+            'developer',
+            'subunit_count',  # ✅ add this in response
+        ]
+
+    def get_subunit_count(self, obj):
+        # 👇 Here we fetch the raw annotated count
+        total_subunits = getattr(obj, "subunit_count", None)
+        if total_subunits is None:
+            # fallback if not annotated
+            total_subunits = PropertyUnit.objects.filter(
+                property=obj
+            ).aggregate(total=Sum('unit_count'))['total'] or 0
+
+        # 👇 Now format as string
+        if total_subunits <= 1:
+            return "1 unit"
+        elif total_subunits > 9:
+            return "9+ units"
+        else:
+            return f"{total_subunits} units"

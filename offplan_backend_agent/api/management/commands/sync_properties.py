@@ -5,7 +5,7 @@ from datetime import datetime
 from dateutil import parser as date_parser
 
 from django.core.management.base import BaseCommand
-from django.db import transaction
+from django.db import DatabaseError, IntegrityError, transaction
 from api.models import (
     Property, City, District, DeveloperCompany, PropertyType,
     PropertyStatus, SalesStatus, Facility, PropertyUnit,
@@ -50,18 +50,22 @@ def upsert_related_model(model, data):
     if not data:
         return None
 
-    if isinstance(data, dict):
-        obj, _ = model.objects.update_or_create(
-            id=data["id"],
-            defaults={"name": data.get("name", f"Unnamed {model.__name__}")},
-        )
-        return obj
-
-    obj = model.objects.filter(id=data).first()
-    if not obj:
-        log.warning(f"⚠️ {model.__name__} ID={data} received without name. Skipping creation.")
-    return obj
-
+    try:
+        with transaction.atomic():  # isolate this insert/update
+            if isinstance(data, dict):
+                obj, _ = model.objects.update_or_create(
+                    id=data["id"],
+                    defaults={"name": data.get("name", f"Unnamed {model.__name__}")},
+                )
+                return obj
+            else:
+                obj = model.objects.filter(id=data).first()
+                if not obj:
+                    log.warning(f"⚠️ {model.__name__} ID={data} received without name. Skipping creation.")
+                return obj
+    except (DatabaseError, IntegrityError) as e:
+        log.error(f"❌ Error upserting {model.__name__} ID={data.get('id') if isinstance(data, dict) else data}: {e}")
+        return None
 
 # ✅ Sync Filters API
 def sync_filters():
@@ -123,6 +127,24 @@ def fetch_all_properties_and_apartments():
     except requests.RequestException as e:
         log.error(f"❌ Failed to fetch properties from /filter: {e}")
         return {}
+
+#✅ Fetch property details by name from /filter : Added 08-07-2025
+def fetch_property_details_by_name(property_name):
+    try:
+        log.info(f"📥 Fetching details from /filter for: {property_name}")
+        response = requests.post(
+            FILTER_PROPERTIES_URL,
+            headers=HEADERS,
+            json={"property_name": property_name}
+        )
+        response.raise_for_status()
+        data = response.json()
+        if data.get("properties"):
+            return data["properties"][0]  # API returns a list
+        return None
+    except requests.RequestException as e:
+        log.error(f"❌ Failed /filter fetch for {property_name}: {e}")
+        return None
 
 
 # ✅ Fetch property list (IDs only)
@@ -339,6 +361,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         try:
             with transaction.atomic():  # 🛡 Wrap in transaction for safety
+                # property_apartments_map = {}
                 sync_filters()
                 property_apartments_map = fetch_all_properties_and_apartments()
                 page = 1
@@ -360,11 +383,21 @@ class Command(BaseCommand):
 
                     for summary in props:
                         prop_id = summary.get("id")
+                        # prop_name = summary.get("title")
                         if not prop_id:
                             log.error(f"❌ Missing property 'id': {summary}")
                             continue
+                        # ✅ Try filter API first
+                        # external_data = fetch_property_details_by_name(prop_name)
+                        external_data = fetch_property_by_id(prop_id)
 
-                        full_data = fetch_property_by_id(prop_id)
+                        # 🔁 Fallback to getProperty API if filter API returns nothing
+                        if external_data:
+                            full_data = external_data
+                        else:
+                            # log.warning(f"⚠️ No data from /filter for {prop_name}. Trying /getProperty...")
+                            full_data = fetch_property_by_id(prop_id)
+
                         if not full_data:
                             continue
 
@@ -407,7 +440,7 @@ class Command(BaseCommand):
                                 if unchanged_counter >= 60:
                                     log.info("🚦 60 consecutive unchanged properties found. Stopping sync.")
                                     log.info(f"\n📊 Sync Summary → Updated: {updated_count}, Created: {created_count}")
-                                    return
+                                    # return
                                 continue
 
                             # ✅ Update property
@@ -426,7 +459,7 @@ class Command(BaseCommand):
                     page += 1
 
                 # 🗑 Delete properties not in external API
-                delete_removed_properties(all_external_property_ids)
+                # delete_removed_properties(all_external_property_ids)
 
                 log.info(f"\n📊 Sync Summary → Updated: {updated_count}, Created: {created_count}")
 
