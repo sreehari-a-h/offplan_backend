@@ -79,7 +79,8 @@ urlpatterns = [
     path('blog/<slug:slug>/', blog_detail_meta_view, name="blog-detail-meta"),
     path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
     path('<str:username>/about/', about_meta_view, name="about-meta"),
-    path('<str:username>/', agent_meta_view, name="agent-meta"),
+    path('<str:username>', agent_meta_view, name="agent-meta"),
+    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap",),
     path('ckeditor/', include('ckeditor_uploader.urls')),
