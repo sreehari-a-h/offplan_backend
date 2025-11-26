@@ -1,5 +1,5 @@
 from rest_framework.routers import DefaultRouter
-from django.urls import path, include
+from django.urls import path, include, re_path
 from api.views.agent_details_username import AgentDetailByUsernameView
 from api.views.property_filter import FilterPropertiesView
 from api.views.properties_list import PropertyListView
@@ -25,7 +25,7 @@ from api.views.agent_list_frontend import AgentListFrontendView
 
 urlpatterns = [
     # path('', include(router.urls)),
-    path('agent/<str:username>/', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
+    # path('agent/<str:username>/', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
     path("agents/frontend/", AgentListFrontendView.as_view(), name="agent-list-frontend"),
     path("properties/filter/", FilterPropertiesView.as_view(), name="property-filter"),
     path("properties/", PropertyListView.as_view(), name="property-list"),
@@ -44,4 +44,6 @@ urlpatterns = [
     path('reserve-now/<int:id>/',ReserveNowView.as_view(),name='reserve-now'),
     path('api/blogs/', BlogPostList.as_view()),
     path('api/blogs/<slug:slug>/', BlogPostDetail.as_view()),
+    re_path(r'^agent/(?P<username>[a-zA-Z0-9_-]+)/$', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
+
 ]
