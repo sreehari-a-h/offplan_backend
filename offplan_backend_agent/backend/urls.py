@@ -61,7 +61,7 @@ urlpatterns = [
     path('', lambda request: HttpResponse("🚀 Offplan Backend is running!")),
     path('admin/', admin.site.urls),
 
-    # IMPORTANT: Sitemap MUST come before catch-all patterns
+    # CRITICAL: Sitemap MUST come before catch-all patterns
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
     
     # Other specific routes
@@ -78,8 +78,8 @@ urlpatterns = [
     path('<str:username>/about/', about_meta_view, name="about-meta"),
     
     # Catch-all patterns MUST be at the end
-    # These will match anything that doesn't match above patterns
-    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
+    # Use negative lookahead to exclude 'sitemap' from username pattern
+    re_path(r'^(?!sitemap)(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
 ]
 
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
