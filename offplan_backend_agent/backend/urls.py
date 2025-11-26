@@ -1,18 +1,5 @@
 """
 URL configuration for backend project.
-
-The `urlpatterns` list routes URLs to views. For more information please see:
-    https://docs.djangoproject.com/en/5.2/topics/http/urls/
-Examples:
-Function views
-    1. Add an import:  from my_app import views
-    2. Add a URL to urlpatterns:  path('', views.home, name='home')
-Class-based views
-    1. Add an import:  from other_app.views import Home
-    2. Add a URL to urlpatterns:  path('', Home.as_view(), name='home')
-Including another URLconf
-    1. Import the include() function: from django.urls import include, path
-    2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
 from api.views import AgentListView
@@ -74,40 +61,25 @@ urlpatterns = [
     path('', lambda request: HttpResponse("🚀 Offplan Backend is running!")),
     path('admin/', admin.site.urls),
 
-    # SEO meta prerender routes (for crawlers)
-    path('blogs/', blogs_listing_meta_view, name="blogs-listing-meta"),
-    path('blog/<slug:slug>/', blog_detail_meta_view, name="blog-detail-meta"),
-    path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
-    path('<str:username>/about/', about_meta_view, name="about-meta"),
-    path('<str:username>', agent_meta_view, name="agent-meta"),
-
-    path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap",),
+    # IMPORTANT: Sitemap MUST come before catch-all patterns
+    path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap"),
+    
+    # Other specific routes
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('api/', include('api.urls')),
     path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
     path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
     path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
-    # path('agents/', AgentListView.as_view(), name='agent-list'),
-    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
-    re_path(r'^(?P<username>[\w-]+)/$', agent_meta_view),
 
+    # SEO meta prerender routes (specific paths before catch-all)
+    path('blogs/', blogs_listing_meta_view, name="blogs-listing-meta"),
+    path('blog/<slug:slug>/', blog_detail_meta_view, name="blog-detail-meta"),
+    path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
+    path('<str:username>/about/', about_meta_view, name="about-meta"),
     
-
-    # Swagger routes
-    # path('agent/<str:username>/', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
-    # path('', lambda request: HttpResponse("🚀 Offplan Backend is running!")),
-    # path("properties/filter/", FilterPropertiesView.as_view(), name="property-filter"),
-    # path("properties/", PropertyListView.as_view(), name="property-list"),
-    # path("property/<int:id>/", PropertyDetailView.as_view(), name="property-detail"),
-    # path("cities/", CityListView.as_view(), name="city-list"),
-    # path('register/', AgentRegisterView.as_view(), name='register-agent'),
-    # path('agent/update/<int:id>/', AgentUpdateView.as_view(), name='agent-update'),
-    # path('agent/delete/<int:id>/', AgentDeleteView.as_view(), name='agent-delete'),
-    # path('agents/list/', AgentListView.as_view(), name='agent-list'),
-    # path('properties/status-counts/', PropertyStatusCountView.as_view(), name='property-status-counts'),
-    # path('properties/city/count/', PropertyByStatusView.as_view(), name='property-city-wise-count'),
-    # path('consultation',ConsultationView.as_view(),name='consultation_details'),
-    # path('subscribe/', SubscribeView.as_view(), name='subscribe'),
-    # path('developers/', DeveloperListView.as_view(), name='developer-list'),
+    # Catch-all patterns MUST be at the end
+    # These will match anything that doesn't match above patterns
+    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
 ]
+
 urlpatterns += static(settings.STATIC_URL, document_root=settings.STATIC_ROOT)
