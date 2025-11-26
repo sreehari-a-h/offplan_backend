@@ -80,20 +80,20 @@ urlpatterns = [
     path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
     path('<str:username>/about/', about_meta_view, name="about-meta"),
     path('<str:username>', agent_meta_view, name="agent-meta"),
-    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
 
     path('sitemap.xml', sitemap, {'sitemaps': sitemaps_dict}, name="django.contrib.sitemaps.views.sitemap",),
     path('ckeditor/', include('ckeditor_uploader.urls')),
     path('api/', include('api.urls')),
+    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
+    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
+    path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     # path('agents/', AgentListView.as_view(), name='agent-list'),
-    # re_path(r'^(?P<username>[\w-]+)/$', agent_meta_view),
+    re_path(r'^(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
+    re_path(r'^(?P<username>[\w-]+)/$', agent_meta_view),
 
     
 
     # Swagger routes
-    path('swagger/', schema_view.with_ui('swagger', cache_timeout=0), name='schema-swagger-ui'),
-    path('redoc/', schema_view.with_ui('redoc', cache_timeout=0), name='schema-redoc'),
-    path('swagger.json', schema_view.without_ui(cache_timeout=0), name='schema-json'),
     # path('agent/<str:username>/', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
     # path('', lambda request: HttpResponse("🚀 Offplan Backend is running!")),
     # path("properties/filter/", FilterPropertiesView.as_view(), name="property-filter"),
