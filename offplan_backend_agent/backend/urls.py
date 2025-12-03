@@ -78,7 +78,7 @@ urlpatterns = [
     path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
     path('<str:username>/about/', about_meta_view, name="about-meta"),
     
-    path('<str:username>/property-details/<int:property_id>/', property_meta_view, name="property-meta"),
+    path('<str:username>/property-details/', property_meta_view, name="property-meta"),
 
     # Catch-all patterns MUST be at the end
     # Use negative lookahead to exclude 'sitemap' from username pattern
