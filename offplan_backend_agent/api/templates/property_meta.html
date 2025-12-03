@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+
+    <title>{{ property.title }} - {{ property.city.name }}</title>
+    <meta name="description" content="{{ property.description|truncatewords:40 }}">
+
+    <!-- OpenGraph Tags -->
+    <meta property="og:title" content="{{ property.title }} - {{ property.city.name }}" />
+    <meta property="og:description" content="{{ property.description|truncatewords:40 }}" />
+    <meta property="og:image" content="{{ property.property_images.first.image.url }}" />
+    <meta property="og:url" content="https://offplan.market/{{ username }}/property-details/?id={{ property.id }}" />
+    <meta property="og:type" content="article" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="{{ property.title }}">
+    <meta name="twitter:description" content="{{ property.description|truncatewords:40 }}">
+    <meta name="twitter:image" content="{{ property.property_images.first.image.url }}">
+</head>
+<body>
+Loaded metadata for property.  
+<!-- React will take over after rendering -->
+</body>
+</html>

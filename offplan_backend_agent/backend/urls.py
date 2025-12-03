@@ -30,6 +30,7 @@ from django.contrib.sitemaps.views import sitemap
 from api.agentsitemap import AgentDetailsSitemap
 from api.blogsitemap import BlogPostSitemap
 from api.homepagesitemap import HomePageSitemap
+from api.views.property_meta_view import property_meta_view
 from api.views.meta_view import (
     agent_meta_view,
     blogs_listing_meta_view,
@@ -77,6 +78,8 @@ urlpatterns = [
     path('<str:username>/contact/', contact_meta_view, name="contact-meta"),
     path('<str:username>/about/', about_meta_view, name="about-meta"),
     
+    path('<str:username>/property-details/<int:property_id>/', property_meta_view, name="property-meta"),
+
     # Catch-all patterns MUST be at the end
     # Use negative lookahead to exclude 'sitemap' from username pattern
     re_path(r'^(?!sitemap)(?P<username>[a-zA-Z0-9_-]+)/?$', agent_meta_view, name="agent-meta"),
