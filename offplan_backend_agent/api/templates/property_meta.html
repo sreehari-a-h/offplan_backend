@@ -2,25 +2,114 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-    <title>{{ property.title }} - {{ property.city.name }}</title>
-    <meta name="description" content="{{ property.description|truncatewords:40 }}">
+    <!-- Primary Meta Tags -->
+    <title>{{ property.title }} - {{ city_name }}</title>
+    <meta name="title" content="{{ property.title }} - {{ city_name }}">
+    <meta name="description" content="{{ description }}">
 
-    <!-- OpenGraph Tags -->
-    <meta property="og:title" content="{{ property.title }} - {{ property.city.name }}" />
-    <meta property="og:description" content="{{ property.description|truncatewords:40 }}" />
-    <meta property="og:image" content="{{ property.property_images.first.image.url }}" />
-    <meta property="og:url" content="https://offplan.market/{{ username }}/property-details/?id={{ property.id }}" />
-    <meta property="og:type" content="article" />
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ frontend_url }}">
+    <meta property="og:title" content="{{ property.title }}">
+    <meta property="og:description" content="{{ description }}">
+    <meta property="og:site_name" content="OffPlan Market">
+    <meta property="og:locale" content="en_US">
+    
+    <!-- Image tags - MUST come before width/height -->
+    <meta property="og:image" content="{{ image_url }}">
+    <meta property="og:image:secure_url" content="{{ image_url }}">
+    <meta property="og:image:type" content="image/jpeg">
+    <meta property="og:image:width" content="1200">
+    <meta property="og:image:height" content="630">
+    <meta property="og:image:alt" content="{{ property.title }} in {{ city_name }}">
+    
+    <!-- Additional property details -->
+    {% if property.low_price %}
+    <meta property="product:price:amount" content="{{ property.low_price }}">
+    <meta property="product:price:currency" content="AED">
+    {% endif %}
 
     <!-- Twitter -->
     <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:url" content="{{ frontend_url }}">
     <meta name="twitter:title" content="{{ property.title }}">
-    <meta name="twitter:description" content="{{ property.description|truncatewords:40 }}">
-    <meta name="twitter:image" content="{{ property.property_images.first.image.url }}">
+    <meta name="twitter:description" content="{{ description }}">
+    <meta name="twitter:image" content="{{ image_url }}">
+
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ frontend_url }}">
+
+    <!-- Preload the image -->
+    <link rel="preload" href="{{ image_url }}" as="image">
+
+    <!-- Auto-redirect to React frontend after meta tags are loaded -->
+    <meta http-equiv="refresh" content="0; url={{ frontend_url }}">
+    
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+        .loader {
+            max-width: 400px;
+        }
+        .spinner {
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        h1 {
+            font-size: 24px;
+            margin: 0 0 10px;
+        }
+        p {
+            opacity: 0.9;
+            font-size: 16px;
+        }
+        /* Hidden image to force browser to load it */
+        .hidden-image {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            opacity: 0;
+            pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-Loaded metadata for property.  
-<!-- React will take over after rendering -->
+    <div class="loader">
+        <div class="spinner"></div>
+        <h1>{{ property.title }}</h1>
+        <p>{{ formatted_price }} • {{ city_name }}{% if district_name %}, {{ district_name }}{% endif %}</p>
+        <p style="font-size: 14px; margin-top: 20px;">Redirecting to property details...</p>
+    </div>
+
+    <!-- Hidden image to ensure it loads for crawlers -->
+    <img src="{{ image_url }}" alt="{{ property.title }}" class="hidden-image">
+
+    <!-- Fallback JavaScript redirect if meta refresh fails -->
+    <script>
+        setTimeout(function() {
+            window.location.href = "{{ frontend_url }}";
+        }, 100);
+    </script>
 </body>
 </html>
