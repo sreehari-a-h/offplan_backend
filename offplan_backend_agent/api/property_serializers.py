@@ -164,21 +164,36 @@ class PaymentPlanSerializer(serializers.ModelSerializer):
 class GroupedApartmentSerializer(serializers.ModelSerializer):
     rooms = serializers.SerializerMethodField()
     unit_type = serializers.SerializerMethodField()
+    unit_count = serializers.SerializerMethodField()  # ✅ Add actual unit count
+    
     class Meta:
         model = GroupedApartment
-        fields = ['id', 'unit_type', 'rooms', 'min_price', 'min_area']
-    def get_rooms(self,obj):
-        return{
-            "en":obj.rooms,
-            "ar":obj.ar_rooms,
-            "fa":obj.fa_rooms,
+        fields = ['id', 'unit_type', 'rooms', 'min_price', 'min_area', 'unit_count']
+    
+    def get_rooms(self, obj):
+        return {
+            "en": obj.rooms,
+            "ar": obj.ar_rooms,
+            "fa": obj.fa_rooms,
         }
-    def get_unit_type(self,obj):
-        return{
-            "en":obj.unit_type,
-            "ar":obj.ar_unit_type,
-            "fa":obj.fa_unit_type,
+    
+    def get_unit_type(self, obj):
+        return {
+            "en": obj.unit_type,
+            "ar": obj.ar_unit_type,
+            "fa": obj.fa_unit_type,
         }
+    
+    def get_unit_count(self, obj):
+        """Return the actual count of PropertyUnits for this apartment type"""
+        # Get the property context from the parent serializer
+        property_obj = self.context.get('property')
+        if property_obj:
+            return PropertyUnit.objects.filter(
+                property=property_obj,
+                apartment_id=obj.id
+            ).count()
+        return 0
 
 
 class PropertyDetailSerializer(serializers.ModelSerializer):
@@ -187,13 +202,12 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
     developer = DeveloperCompanySerializer()
     property_images = PropertyImageSerializer(many=True)
     facilities = FacilityNameSerializer(many=True)
-    grouped_apartments = GroupedApartmentSerializer(many=True)
+    grouped_apartments = serializers.SerializerMethodField()  # ✅ Change to method field
     payment_plans = PaymentPlanSerializer(many=True)
-    property_units = PropertyUnitSerializer(many=True, read_only=True)  # ✅ Add this
+    property_units = PropertyUnitSerializer(many=True, read_only=True)
     title = serializers.SerializerMethodField()
     description = serializers.SerializerMethodField()
     sales_status = SalesStatusSerializer()
-
 
     class Meta:
         model = Property
@@ -205,7 +219,20 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
             'guarantee_rental_guarantee', 'guarantee_rental_guarantee_value',
             'city', 'district', 'developer', 'property_type', 'property_status',
             'sales_status', 'property_images', 'facilities',
-            'grouped_apartments', 'payment_plans', 'property_units']
+            'grouped_apartments', 'payment_plans', 'property_units'
+        ]
+    
+    def get_grouped_apartments(self, obj):
+        """Only return grouped apartments that have actual units"""
+        apartments = GroupedApartment.objects.filter(property=obj)
+        # Pass property context to child serializer
+        serializer = GroupedApartmentSerializer(
+            apartments, 
+            many=True, 
+            context={'property': obj}
+        )
+        # Filter out apartments with 0 units
+        return [apt for apt in serializer.data if apt.get('unit_count', 0) > 0]
     
     def get_title(self, obj):
         return {
@@ -220,7 +247,6 @@ class PropertyDetailSerializer(serializers.ModelSerializer):
             "ar": obj.arabic_desc or "",
             "fa": obj.farsi_desc or "",
         }
-
 
 
 # class PropertyUnitSerializer(serializers.ModelSerializer):
