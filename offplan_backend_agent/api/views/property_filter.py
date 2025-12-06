@@ -1,4 +1,6 @@
 from rest_framework.views import APIView
+from django.views.decorators.csrf import csrf_exempt
+from django.utils.decorators import method_decorator
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework import status
@@ -12,6 +14,7 @@ import calendar
 from datetime import datetime
 from django.db.models import Case, When, Value, IntegerField, Q, Sum
 
+@method_decorator(csrf_exempt, name='dispatch')
 class FilterPropertiesView(APIView):
     permission_classes = [AllowAny]
 
