@@ -108,10 +108,24 @@ ALLOWED_HOSTS = [
     "www.offplan.market",
 ]
 
+# CSRF Settings
+CSRF_COOKIE_SECURE = True  # Only send cookie over HTTPS
+CSRF_COOKIE_HTTPONLY = False  # Allow JavaScript to read CSRF cookie
+CSRF_COOKIE_SAMESITE = 'Lax'  # or 'None' if cross-domain
+CSRF_COOKIE_DOMAIN = '.offplan.market'  # Allow subdomains
+CSRF_USE_SESSIONS = False  # Use cookie-based CSRF
+
+# Session Settings (if using sessions)
+SESSION_COOKIE_SECURE = True
+SESSION_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_DOMAIN = '.offplan.market'
+
+# Update CSRF_TRUSTED_ORIGINS (already have this, but ensure it's correct)
 CSRF_TRUSTED_ORIGINS = [
     "https://offplanmarket.vercel.app",
     "https://offplan-backend.onrender.com",
     "https://offplan.market",
+    "https://www.offplan.market",  # Add www version
 ]
 
 CORS_ALLOWED_ORIGINS = [
