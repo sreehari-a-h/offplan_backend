@@ -45,8 +45,8 @@ urlpatterns = [
     path('api/blogs/', BlogPostList.as_view()),
     path('api/blogs/<slug:slug>/', BlogPostDetail.as_view()),
     # Blog SEO endpoints (for search engine crawlers)
-    path('blog/', BlogListView.as_view(), name='blog-list'),
-    path('blog/<slug:slug>/', BlogDetailView.as_view(), name='blog-detail'),
+    re_path(r'^blogs/$', BlogListView.as_view(), name='blog-list'),
+    re_path(r'^blog/(?P<slug>[-\w]+)/$', BlogDetailView.as_view(), name='blog-detail'),
     re_path(r'^agent/(?P<username>[a-zA-Z0-9_-]+)/$', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
 
 ]
