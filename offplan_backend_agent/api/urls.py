@@ -16,7 +16,7 @@ from api.views.developers_list import DeveloperListView
 from api.views import AgentListView
 from api.views.contact_enquiry import ContactEnquiryView
 from api.views.reserve_now import ReserveNowView
-from api.views.blogs import BlogPostDetail, BlogPostList
+from api.views.blogs import BlogDetailView, BlogListView, BlogPostDetail, BlogPostList
 from api.views.agent_list_frontend import AgentListFrontendView
 
 
@@ -44,6 +44,9 @@ urlpatterns = [
     path('reserve-now/<int:id>/',ReserveNowView.as_view(),name='reserve-now'),
     path('api/blogs/', BlogPostList.as_view()),
     path('api/blogs/<slug:slug>/', BlogPostDetail.as_view()),
+    # Blog SEO endpoints (for search engine crawlers)
+    path('blog/', BlogListView.as_view(), name='blog-list'),
+    path('blog/<slug:slug>/', BlogDetailView.as_view(), name='blog-detail'),
     re_path(r'^agent/(?P<username>[a-zA-Z0-9_-]+)/$', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
 
 ]

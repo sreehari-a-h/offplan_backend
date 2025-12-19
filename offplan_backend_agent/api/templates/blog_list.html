@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <!-- Primary Meta Tags -->
+    <title>Blog Posts - Your Site Name</title>
+    <meta name="title" content="Blog Posts - Your Site Name">
+    <meta name="description" content="Read our latest blog posts about real estate, property investment, and market insights.">
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="{{ request.build_absolute_uri }}">
+    <meta property="og:title" content="Blog Posts - Your Site Name">
+    <meta property="og:description" content="Read our latest blog posts about real estate, property investment, and market insights.">
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary">
+    <meta property="twitter:url" content="{{ request.build_absolute_uri }}">
+    <meta property="twitter:title" content="Blog Posts - Your Site Name">
+    <meta property="twitter:description" content="Read our latest blog posts about real estate, property investment, and market insights.">
+    
+    <!-- Canonical URL -->
+    <link rel="canonical" href="{{ request.build_absolute_uri }}">
+</head>
+<body>
+    <h1>Blog Posts</h1>
+    <div>
+        {% for blog in blogs %}
+            <article>
+                <h2><a href="{% url 'blog-detail' blog.slug %}">{{ blog.title }}</a></h2>
+                {% if blog.image %}
+                    <img src="{{ blog.image.url }}" alt="{{ blog.title }}" style="max-width: 300px;">
+                {% endif %}
+                <p>{{ blog.excerpt|safe|truncatewords:30 }}</p>
+                <p><small>By {{ blog.author }} on {{ blog.created_at|date:"F d, Y" }}</small></p>
+                <a href="{% url 'blog-detail' blog.slug %}">Read more</a>
+            </article>
+            <hr>
+        {% empty %}
+            <p>No blogs found.</p>
+        {% endfor %}
+    </div>
+    
+    <!-- Pagination -->
+    {% if is_paginated %}
+        <div>
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            {% endif %}
+            
+            <span>Page {{ page_obj.number }} of {{ page_obj.paginator.num_pages }}</span>
+            
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}">Next</a>
+            {% endif %}
+        </div>
+    {% endif %}
+</body>
+</html>
