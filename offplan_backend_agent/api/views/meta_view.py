@@ -77,50 +77,53 @@ def agent_meta_view(request, username):
     return HttpResponseRedirect(react_url)
 
 def blogs_listing_meta_view(request):
-    user_agent = request.META.get("HTTP_USER_AGENT", "")
-    if CRAWLER_USER_AGENTS.search(user_agent):
-        meta_data = {
-            "title": "Latest Real Estate Insights | Blog",
-            "description": "Stay updated with the latest trends, tips, and insights in Dubai real estate market.",
-            "image": "https://offplan.market/static/default-blog.jpg",
-            "url": request.build_absolute_uri(),
-        }
-        return render(request, "meta_template.html", meta_data)
-
-    return HttpResponseRedirect("https://offplan.market/blogs/")
+    """
+    Render blogs listing page for ALL users
+    """
+    blogs = BlogPost.objects.all().order_by('-created_at')
+    
+    context = {
+        "blogs": blogs,
+    }
+    
+    return render(request, "blog_list.html", context)
 
 from api.models import BlogPost
 
 def blog_detail_meta_view(request, slug):
-    user_agent = request.META.get("HTTP_USER_AGENT", "")
-    if CRAWLER_USER_AGENTS.search(user_agent):
-        try:
-            post = BlogPost.objects.get(slug=slug)
-            
-            # Handle multilingual title if needed
-            post_title = post.title
-            if isinstance(post_title, dict):
-                post_title = post_title.get('en', post_title.get('english', ''))
-                if not post_title:
-                    post_title = list(post_title.values())[0] if post_title else 'Blog Post'
-            
-            image = post.image.url if post.image else "https://offplan.market/static/default-blog.jpg"
-            meta_data = {
-                "title": post.meta_title or post_title,
-                "description": post.meta_description or (post.content[:160] if post.content else "Blog article"),
-                "image": request.build_absolute_uri(image),
-                "url": request.build_absolute_uri(),
-            }
-        except BlogPost.DoesNotExist:
-            meta_data = {
-                "title": "Blog Not Found",
-                "description": "This blog post does not exist.",
-                "image": "https://offplan.market/static/default-blog.jpg",
-                "url": request.build_absolute_uri(),
-            }
+    """
+    Render blog detail page with proper meta tags for ALL users (crawlers and regular users)
+    """
+    try:
+        post = BlogPost.objects.get(slug=slug)
+        
+        # Handle multilingual title if needed
+        post_title = post.title
+        if isinstance(post_title, dict):
+            post_title = post_title.get('en', post_title.get('english', ''))
+            if not post_title:
+                post_title = list(post_title.values())[0] if post_title else 'Blog Post'
+        
+        image = post.image.url if post.image else "https://offplan.market/static/default-blog.jpg"
+        
+        context = {
+            "blog": post,
+            "title": post.meta_title or post_title,
+            "description": post.meta_description or (post.content[:160] if post.content else "Blog article"),
+            "image": request.build_absolute_uri(image),
+            "url": request.build_absolute_uri(),
+        }
+        
+        return render(request, "blog_detail.html", context)
+        
+    except BlogPost.DoesNotExist:
+        meta_data = {
+            "title": "Blog Not Found",
+            "description": "This blog post does not exist.",
+            "image": "https://offplan.market/static/default-blog.jpg",
+            "url": request.build_absolute_uri(),
+        }
         return render(request, "meta_template.html", meta_data)
-
-    return HttpResponseRedirect(f"https://offplan.market/blog/{slug}/")
 
 def contact_meta_view(request, username):
     user_agent = request.META.get("HTTP_USER_AGENT", "")
