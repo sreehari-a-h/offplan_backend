@@ -17,6 +17,11 @@ load_dotenv()
 
 DEBUG=True
 
+APPEND_SLASH = True
+USE_X_FORWARDED_HOST = True
+USE_X_FORWARDED_PORT = True
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 STATIC_ROOT = os.path.join(BASE_DIR, "staticfiles")
@@ -267,12 +272,9 @@ DATABASES = {
     }
 }
 
-USE_X_FORWARDED_HOST = True
-USE_X_FORWARDED_PORT = True
-SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # This is causing the redirect loop - set to False for these URLs
-# APPEND_SLASH = True
+
 
 
 SWAGGER_SETTINGS = {
