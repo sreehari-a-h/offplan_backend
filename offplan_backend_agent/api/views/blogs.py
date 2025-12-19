@@ -16,14 +16,14 @@ class BlogPostDetail(RetrieveAPIView):
 # Add these new views for SEO/crawlers
 class BlogListView(ListView):
     model = BlogPost
-    template_name = 'blogs/blog_list.html'
+    template_name = 'blog_list.html'
     context_object_name = 'blogs'
     paginate_by = 10
     ordering = ['-created_at']
 
 class BlogDetailView(DetailView):
     model = BlogPost
-    template_name = 'blogs/blog_detail.html'
+    template_name = 'blog_detail.html'
     context_object_name = 'blog'
     slug_field = 'slug'
     slug_url_kwarg = 'slug'
