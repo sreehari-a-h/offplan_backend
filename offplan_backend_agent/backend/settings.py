@@ -100,6 +100,7 @@ CORS_ALLOW_CREDENTIALS = True
 CORS_ALLOW_ALL_ORIGINS = True
 
 ALLOWED_HOSTS = [
+    "54.167.23.212",
     "offplan-backend.onrender.com",  # ✅ Your Render service URL
     "localhost",                     # optional for local dev
     "127.0.0.1",
