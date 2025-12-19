@@ -92,38 +92,42 @@ from api.models import BlogPost
 
 def blog_detail_meta_view(request, slug):
     """
-    Render blog detail page with proper meta tags for ALL users (crawlers and regular users)
+    Render blog detail page with meta tags for crawlers, React for regular users
     """
-    try:
-        post = BlogPost.objects.get(slug=slug)
-        
-        # Handle multilingual title if needed
-        post_title = post.title
-        if isinstance(post_title, dict):
-            post_title = post_title.get('en', post_title.get('english', ''))
-            if not post_title:
-                post_title = list(post_title.values())[0] if post_title else 'Blog Post'
-        
-        image = post.image.url if post.image else "https://offplan.market/static/default-blog.jpg"
-        
-        context = {
-            "blog": post,
-            "title": post.meta_title or post_title,
-            "description": post.meta_description or (post.content[:160] if post.content else "Blog article"),
-            "image": request.build_absolute_uri(image),
-            "url": request.build_absolute_uri(),
-        }
-        
-        return render(request, "blog_detail.html", context)
-        
-    except BlogPost.DoesNotExist:
-        meta_data = {
-            "title": "Blog Not Found",
-            "description": "This blog post does not exist.",
-            "image": "https://offplan.market/static/default-blog.jpg",
-            "url": request.build_absolute_uri(),
-        }
-        return render(request, "meta_template.html", meta_data)
+    user_agent = request.META.get("HTTP_USER_AGENT", "")
+    
+    # If crawler, render Django template with meta tags
+    if CRAWLER_USER_AGENTS.search(user_agent):
+        try:
+            post = BlogPost.objects.get(slug=slug)
+            
+            # Handle multilingual title if needed
+            post_title = post.title
+            if isinstance(post_title, dict):
+                post_title = post_title.get('en', post_title.get('english', ''))
+                if not post_title:
+                    post_title = list(post_title.values())[0] if post_title else 'Blog Post'
+            
+            image = post.image.url if post.image else "https://offplan.market/static/default-blog.jpg"
+            
+            context = {
+                "blog": post,
+            }
+            
+            return render(request, "blog_detail.html", context)
+            
+        except BlogPost.DoesNotExist:
+            return render(request, "meta_template.html", {
+                "title": "Blog Not Found",
+                "description": "This blog post does not exist.",
+                "image": "https://offplan.market/static/default-blog.jpg",
+                "url": request.build_absolute_uri(),
+            })
+    
+    # For regular users, serve React app (let Nginx handle it)
+    # Return a simple response that tells Nginx to serve the React app
+    from django.http import HttpResponse
+    return HttpResponse(status=404)  # This will make Nginx fall back to React
 
 def contact_meta_view(request, username):
     user_agent = request.META.get("HTTP_USER_AGENT", "")
