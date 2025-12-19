@@ -44,9 +44,12 @@ urlpatterns = [
     path('reserve-now/<int:id>/',ReserveNowView.as_view(),name='reserve-now'),
     path('api/blogs/', BlogPostList.as_view()),
     path('api/blogs/<slug:slug>/', BlogPostDetail.as_view()),
-    # Blog SEO pages (HTML)
-    re_path(r'^blogs/?$', BlogListView.as_view(), name='blog-list'),
-    re_path(r'^blog/(?P<slug>[-\w]+)/?$', BlogDetailView.as_view(), name='blog-detail'),
+     # Blog SEO endpoints - explicit trailing slash handling
+    path('blogs/', BlogListView.as_view(), name='blog-list'),
+    path('blogs', BlogListView.as_view(), name='blog-list-no-slash'),
+    path('blog/<slug:slug>/', BlogDetailView.as_view(), name='blog-detail'),
+    path('blog/<slug:slug>', BlogDetailView.as_view(), name='blog-detail-no-slash'),
+    
     re_path(r'^agent/(?P<username>[a-zA-Z0-9_-]+)/$', AgentDetailByUsernameView.as_view(), name='agent-detail-by-username'),
 
 ]
