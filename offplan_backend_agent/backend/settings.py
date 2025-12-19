@@ -271,7 +271,7 @@ USE_X_FORWARDED_HOST = True
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
 # This is causing the redirect loop - set to False for these URLs
-APPEND_SLASH = False
+APPEND_SLASH = True
 
 
 SWAGGER_SETTINGS = {
