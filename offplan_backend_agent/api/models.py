@@ -383,21 +383,21 @@ class BlogPost(models.Model):
     excerpt = HTMLField(blank=True, null=True, help_text="Rich text excerpt")
     content = HTMLField(help_text="Rich text content with HTML formatting")  # Changed to HTMLField
     meta_title = models.CharField(max_length=255, blank=True, null=True)
-    meta_description = models.CharField(max_length=255, blank=True, null=True)
+    meta_description = models.CharField(blank=True, null=True)
 
     # ARABIC (auto generated) - Keep as TextField since these are auto-translated
     title_ar = models.CharField(max_length=255, blank=True, null=True)
     excerpt_ar = models.TextField(blank=True, null=True)
     content_ar = models.TextField(blank=True, null=True)
     meta_title_ar = models.CharField(max_length=255, blank=True, null=True)
-    meta_description_ar = models.CharField(max_length=255, blank=True, null=True)
+    meta_description_ar = models.CharField(blank=True, null=True)
 
     # FARSI (auto generated) - Keep as TextField since these are auto-translated
     title_fa = models.CharField(max_length=255, blank=True, null=True)
     excerpt_fa = models.TextField(blank=True, null=True)
     content_fa = models.TextField(blank=True, null=True)
     meta_title_fa = models.CharField(max_length=255, blank=True, null=True)
-    meta_description_fa = models.CharField(max_length=255, blank=True, null=True)
+    meta_description_fa = models.CharField(blank=True, null=True)
 
     image = models.ImageField(storage=S3Boto3Storage(), upload_to='', blank=True, null=True)
     author = models.CharField(max_length=100)
