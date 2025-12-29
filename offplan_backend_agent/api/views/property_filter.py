@@ -12,7 +12,9 @@ from .properties_list import CustomPagination
 
 import calendar
 from datetime import datetime
-from django.db.models import Case, When, Value, IntegerField, Q, Sum
+from django.db.models import Case, When, Value, IntegerField, Q, Sum, Prefetch
+import time
+from django.db import connection, reset_queries
 
 @method_decorator(csrf_exempt, name='dispatch')
 class FilterPropertiesView(APIView):
@@ -40,6 +42,9 @@ class FilterPropertiesView(APIView):
         )
     )
     def post(self, request):
+        reset_queries()
+        start_time = time.time()
+        
         data = request.data
         
         # Start with optimized base queryset
@@ -50,21 +55,50 @@ class FilterPropertiesView(APIView):
             'property_type',
             'property_status',
             'sales_status'
-        ).annotate(
-            subunit_count=Sum('property_units__unit_count')
-        ).order_by('-updated_at')
-
-        # Apply filters
+        )
+        
+        # Apply filters BEFORE annotations to reduce dataset
         queryset = self._apply_filters(queryset, data)
+        
+        # Get unique property IDs if filtering by grouped apartments
+        if data.get("unit_type") or data.get("rooms"):
+            # Get property IDs first to avoid distinct on the whole queryset
+            property_ids = queryset.values_list('id', flat=True).distinct()
+            queryset = Property.objects.filter(id__in=property_ids).select_related(
+                'city',
+                'district',
+                'developer',
+                'property_type',
+                'property_status',
+                'sales_status'
+            )
         
         # Apply ordering
         queryset = self._apply_ordering(queryset, data)
         
+        # Add annotation after filtering
+        queryset = queryset.annotate(
+            subunit_count=Sum('property_units__unit_count')
+        )
+        
+        query_time = time.time() - start_time
+        print(f"[FILTER] Query building time: {query_time:.2f}s, Queries: {len(connection.queries)}")
+        
         # Paginate results
         paginator = CustomPagination()
         paginator.request = request
-        paginated_qs = paginator.paginate_queryset(queryset.distinct(), request)
+        paginated_qs = paginator.paginate_queryset(queryset, request)
+        
+        paginate_time = time.time() - start_time - query_time
+        print(f"[FILTER] Pagination time: {paginate_time:.2f}s")
+        
         serializer = PropertySerializer(paginated_qs, many=True)
+        
+        serialize_time = time.time() - start_time - query_time - paginate_time
+        total_time = time.time() - start_time
+        
+        print(f"[FILTER] Serialization time: {serialize_time:.2f}s")
+        print(f"[FILTER] Total time: {total_time:.2f}s, Total queries: {len(connection.queries)}")
         
         return paginator.get_paginated_response(serializer.data)
 
@@ -78,10 +112,11 @@ class FilterPropertiesView(APIView):
         if district := data.get("district"):
             queryset = queryset.filter(district__name__icontains=district)
 
-        # Property type and unit filters
+        # Property type filters
         if prop_type := data.get("property_type"):
             queryset = queryset.filter(property_type__name__icontains=prop_type)
 
+        # Unit type and rooms filters - these cause the distinct() issue
         if unit_type := data.get("unit_type"):
             queryset = queryset.filter(grouped_apartments__unit_type__icontains=unit_type)
 
@@ -135,7 +170,7 @@ class FilterPropertiesView(APIView):
                 return queryset.filter(delivery_date__gte=start_unix)
 
         except ValueError:
-            return queryset  # Return unfiltered queryset if invalid input
+            return queryset
 
     def _apply_ordering(self, queryset, data):
         """Apply ordering to the queryset"""
@@ -143,7 +178,6 @@ class FilterPropertiesView(APIView):
         # Title filtering with prioritization
         if title := data.get("title"):
             queryset = queryset.annotate(
-                # Priority: 0 if exact match, 1 if contains, 2 otherwise
                 title_priority=Case(
                     When(title__iexact=title, then=Value(0)),
                     When(title__icontains=title, then=Value(1)),
