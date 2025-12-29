@@ -229,15 +229,13 @@ class BlogPostSerializer(serializers.ModelSerializer):
 
 class AgentDetailsFrontendSerializer(serializers.ModelSerializer):
     avatar = serializers.SerializerMethodField()
-    nationality = serializers.CharField(default="")
-
-    # Non-model fields need to be defined explicitly
+    nationality = serializers.SerializerMethodField()
     languages = serializers.ListField(child=serializers.CharField(), default=[])
-    specialties = serializers.ListField(child=serializers.CharField(), default=[])
-    totalSales = serializers.CharField(source='total_business_deals', default=0)
-    responseTime = serializers.CharField(default="")
-    badge = serializers.CharField(default="")
-    color = serializers.CharField(source='color_gradient', default="")
+    specialties = serializers.SerializerMethodField()
+    totalSales = serializers.SerializerMethodField()
+    responseTime = serializers.SerializerMethodField()
+    badge = serializers.SerializerMethodField()
+    color = serializers.SerializerMethodField()
 
     class Meta:
         model = AgentDetails
@@ -257,9 +255,25 @@ class AgentDetailsFrontendSerializer(serializers.ModelSerializer):
         ]
 
     def get_avatar(self, obj):
-        return f"{obj.profile_image_url}"
+        return obj.profile_image_url or ""
 
     def get_nationality(self, obj):
-        # You'll need to decide how nationality_code is retrieved
-        code = getattr(obj, 'nationality_code', None)
-        return f"https://flagcdn.com/32x24/{code.lower()}.png" if code else None
+        code = obj.nationality
+        if code:
+            return f"https://flagcdn.com/32x24/{code.lower()}.png"
+        return ""
+
+    def get_specialties(self, obj):
+        return obj.specialties or []
+
+    def get_totalSales(self, obj):
+        return obj.total_business_deals or "0"
+
+    def get_responseTime(self, obj):
+        return obj.responseTime or ""
+
+    def get_badge(self, obj):
+        return obj.badge or ""
+
+    def get_color(self, obj):
+        return obj.color_gradient or ""
