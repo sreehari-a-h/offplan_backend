@@ -11,7 +11,22 @@ class PropertyDetailView(APIView):
 
     def get(self, request, id):
         try:
-            prop = Property.objects.get(id=id)
+            # Optimized query with all related fields
+            prop = Property.objects.select_related(
+                'city',
+                'district',
+                'developer',
+                'property_type',
+                'property_status',
+                'sales_status'
+            ).prefetch_related(
+                'facilities',
+                'property_images',
+                'property_units',
+                'payment_plans__values',
+                'grouped_apartments'
+            ).get(id=id)
+            
             serializer = PropertyDetailSerializer(prop)
 
             return Response({

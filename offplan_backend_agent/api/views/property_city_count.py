@@ -13,7 +13,7 @@ status_param = openapi.Parameter(
     description="Filter by property status (e.g., Ready, Off Plan, Sold Out, or Total for all statuses)",
     type=openapi.TYPE_STRING,
     required=True,
-    enum=["Ready", "Off Plan", "Sold Out", "Total"],  # ✅ Added Total
+    enum=["Ready", "Off Plan", "Sold Out", "Total"],
 )
 
 class PropertyByStatusView(APIView):
@@ -30,23 +30,26 @@ class PropertyByStatusView(APIView):
                 "errors": None
             }, status=status.HTTP_200_OK)
 
-        # Handle Total separately
+        # Handle Total separately - optimized with only() to fetch minimal fields
         if status_name.lower() == "total":
             city_data = (
                 Property.objects
+                .only('city')  # Only fetch city field
+                .select_related('city')  # Optimize city lookup
                 .values('city__id', 'city__name')
                 .annotate(property_count=Count('id'))
                 .order_by('-property_count')
             )
 
-            results = []
-            for city in city_data:
-                results.append({
+            results = [
+                {
                     "city_id": city['city__id'],
                     "city_name": city['city__name'],
                     "property_count": city['property_count'],
                     "filter_status": "Total"
-                })
+                }
+                for city in city_data
+            ]
 
             return Response({
                 "status": True,
@@ -55,7 +58,7 @@ class PropertyByStatusView(APIView):
                 "errors": None
             }, status=status.HTTP_200_OK)
 
-        # Handle Ready / Off Plan / Sold Out
+        # Handle Ready / Off Plan / Sold Out - optimized query
         property_status = PropertyStatus.objects.filter(name__iexact=status_name).first()
         if not property_status:
             return Response({
@@ -65,21 +68,25 @@ class PropertyByStatusView(APIView):
                 "errors": None
             }, status=status.HTTP_404_NOT_FOUND)
 
-        properties = Property.objects.filter(property_status=property_status)
         city_data = (
-            properties.values('city__id', 'city__name')
+            Property.objects
+            .filter(property_status=property_status)
+            .only('city')  # Only fetch city field
+            .select_related('city')  # Optimize city lookup
+            .values('city__id', 'city__name')
             .annotate(property_count=Count('id'))
             .order_by('-property_count')
         )
 
-        results = []
-        for city in city_data:
-            results.append({
+        results = [
+            {
                 "city_id": city['city__id'],
                 "city_name": city['city__name'],
                 "property_count": city['property_count'],
                 "filter_status": property_status.name
-            })
+            }
+            for city in city_data
+        ]
 
         return Response({
             "status": True,

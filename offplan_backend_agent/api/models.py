@@ -108,6 +108,15 @@ class Property(models.Model):
 
     class Meta:
         ordering = ['-updated_at']
+        indexes = [
+            models.Index(fields=['-updated_at']),
+            models.Index(fields=['low_price']),
+            models.Index(fields=['min_area']),
+            models.Index(fields=['delivery_date']),
+            models.Index(fields=['city', 'district']),
+            models.Index(fields=['property_status']),
+            models.Index(fields=['sales_status']),
+        ]
 
 class PropertyUnit(models.Model):
     id = models.BigIntegerField(primary_key=True)
@@ -274,6 +283,11 @@ class AgentDetails(models.Model):
         managed = True  # Ensure True only if Django manages the table
         verbose_name_plural = "Agent Details"
         ordering = ['-created_at']
+        indexes = [
+            models.Index(fields=['username']),
+            models.Index(fields=['created_at']),
+            models.Index(fields=['rating']),
+        ]
 
     def __str__(self):
         return self.username

@@ -42,8 +42,15 @@ class FilterPropertiesView(APIView):
     def post(self, request):
         data = request.data
         
-        # Start with base queryset including subunit_count annotation
-        queryset = Property.objects.annotate(
+        # Start with optimized base queryset
+        queryset = Property.objects.select_related(
+            'city',
+            'district',
+            'developer',
+            'property_type',
+            'property_status',
+            'sales_status'
+        ).annotate(
             subunit_count=Sum('property_units__unit_count')
         ).order_by('-updated_at')
 

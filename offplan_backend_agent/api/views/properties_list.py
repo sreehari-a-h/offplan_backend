@@ -34,10 +34,18 @@ class PropertyListView(APIView):
     permission_classes = [AllowAny]
 
     def get(self, request: Request):
-        # Annotate each property with total unit count
-        properties = Property.objects.annotate(
+        # Optimized query with select_related and annotate
+        properties = Property.objects.select_related(
+            'city',
+            'district',
+            'developer',
+            'property_type',
+            'property_status',
+            'sales_status'
+        ).annotate(
             subunit_count=Sum('property_units__unit_count')
-        )
+        ).order_by('-updated_at')  # Add explicit ordering
+        
         paginator = CustomPagination()
         paginator.request = request
         paginated_qs = paginator.paginate_queryset(properties, request)
