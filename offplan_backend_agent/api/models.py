@@ -273,6 +273,7 @@ class AgentDetails(models.Model):
         unique_together = ('id', 'username')
         managed = True  # Ensure True only if Django manages the table
         verbose_name_plural = "Agent Details"
+        ordering = ['-created_at']
 
     def __str__(self):
         return self.username
