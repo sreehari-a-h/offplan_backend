@@ -134,6 +134,8 @@ CSRF_TRUSTED_ORIGINS = [
     "https://offplan-backend.onrender.com",
     "https://offplan.market",
     "https://www.offplan.market",  # Add www version
+    "http://54.167.23.212",
+    "https://54.167.23.212.compute-1.amazonaws.com"
 ]
 
 CORS_ALLOWED_ORIGINS = [
@@ -141,6 +143,8 @@ CORS_ALLOWED_ORIGINS = [
     "http://localhost:3000",  # for development
     "https://offplan-backend.onrender.com",
     "https://offplan.market",
+    "https://www.offplan.market",  # Add www version
+    "https://ec2-54-167-23-212.compute-1.amazonaws.com"
 ]
 
 CKEDITOR_CONFIGS = {

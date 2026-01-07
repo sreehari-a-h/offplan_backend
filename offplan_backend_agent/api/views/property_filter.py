@@ -10,6 +10,9 @@ from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 from .properties_list import CustomPagination
 
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import AllowAny
+
 import calendar
 from datetime import datetime
 from django.db.models import Case, When, Value, IntegerField, Q, Sum, Prefetch
@@ -17,6 +20,7 @@ import time
 from django.db import connection, reset_queries
 
 @method_decorator(csrf_exempt, name='dispatch')
+@permission_classes([AllowAny])
 class FilterPropertiesView(APIView):
     permission_classes = [AllowAny]
 
