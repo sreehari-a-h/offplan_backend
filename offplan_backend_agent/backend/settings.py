@@ -113,6 +113,7 @@ ALLOWED_HOSTS = [
     "192.168.1.50",
     "offplan.market",
     "www.offplan.market",
+    'ec2-54-167-23-212.compute-1.amazonaws.com',
 ]
 
 # CSRF Settings
