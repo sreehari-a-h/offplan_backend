@@ -42,9 +42,11 @@ class PropertyListView(APIView):
             'property_type',
             'property_status',
             'sales_status'
-        ).annotate(
-            subunit_count=Sum('property_units__unit_count')
         ).order_by('-updated_at')  # Add explicit ordering
+        # .annotate(
+        #     subunit_count=Sum('property_units__unit_count')
+        # )
+       
         
         paginator = CustomPagination()
         paginator.request = request
