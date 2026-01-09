@@ -9,12 +9,19 @@ from api.serializers import PropertySerializer
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
 
+from rest_framework.decorators import permission_classes
+from rest_framework.permissions import AllowAny
+
 import calendar
 from datetime import datetime
 from django.db.models import Case, When, Value, IntegerField, Q, Sum
 import time
 from django.db import connection, reset_queries
 
+from django.db.models import Exists, OuterRef
+from api.models import GroupedApartment
+
+# Optimized Pagination Class
 from rest_framework.pagination import PageNumberPagination
 from collections import OrderedDict
 
@@ -22,12 +29,16 @@ from collections import OrderedDict
 class FastCountPagination(PageNumberPagination):
     """
     Optimized pagination that avoids slow COUNT(*) queries
+    by using a limit-offset approach with approximate totals
     """
     page_size = 20
     page_size_query_param = 'page_size'
     max_page_size = 100
     
     def paginate_queryset(self, queryset, request, view=None):
+        """
+        Paginate the queryset without performing a full count.
+        """
         self.count = None
         self.request = request
         
@@ -35,6 +46,7 @@ class FastCountPagination(PageNumberPagination):
         if not page_size:
             return None
 
+        # Get page number
         page_number = request.query_params.get(self.page_query_param, 1)
         try:
             page_number = int(page_number)
@@ -44,11 +56,14 @@ class FastCountPagination(PageNumberPagination):
         if page_number < 1:
             page_number = 1
 
+        # Calculate offset
         offset = (page_number - 1) * page_size
-        limit = page_size + 1
+        limit = page_size + 1  # Get one extra to check if there's a next page
 
+        # Fetch results
         results = list(queryset[offset:offset + limit])
         
+        # Check if there's a next page
         self.has_next = len(results) > page_size
         if self.has_next:
             results = results[:page_size]
@@ -59,6 +74,9 @@ class FastCountPagination(PageNumberPagination):
         return results
 
     def get_paginated_response(self, data):
+        """
+        Return paginated response without total count
+        """
         return Response(OrderedDict([
             ('next', self.get_next_link()),
             ('previous', self.get_previous_link()),
@@ -89,6 +107,7 @@ class FastCountPagination(PageNumberPagination):
 
 
 @method_decorator(csrf_exempt, name='dispatch')
+@permission_classes([AllowAny])
 class FilterPropertiesView(APIView):
     permission_classes = [AllowAny]
 
@@ -119,18 +138,16 @@ class FilterPropertiesView(APIView):
         
         data = request.data
         
-        # Build queryset using the WORKING pattern from old version
+        # Build optimized queryset
         queryset = self._build_queryset(data)
         
         query_time = time.time() - start_time
         print(f"[FILTER] Query building time: {query_time:.2f}s, Queries: {len(connection.queries)}")
         
-        # Use fast pagination
+        # Use fast pagination (no COUNT query)
         paginator = FastCountPagination()
         paginator.request = request
-        
-        # Apply .distinct() like the old version to handle JOIN duplicates
-        paginated_qs = paginator.paginate_queryset(queryset.distinct(), request)
+        paginated_qs = paginator.paginate_queryset(queryset, request)
         
         paginate_time = time.time() - start_time - query_time
         print(f"[FILTER] Pagination time: {paginate_time:.2f}s")
@@ -147,12 +164,10 @@ class FilterPropertiesView(APIView):
         return paginator.get_paginated_response(serializer.data)
 
     def _build_queryset(self, data):
-        """Build queryset using the WORKING pattern from old microservice"""
+        """Build optimized queryset with all filters and annotations"""
         
-        # Start with annotation FIRST (like old version)
-        queryset = Property.objects.annotate(
-            subunit_count=Sum('property_units__unit_count')
-        ).select_related(
+        # Start with base queryset - use select_related for foreign keys
+        queryset = Property.objects.select_related(
             'city',
             'district',
             'developer',
@@ -161,16 +176,21 @@ class FilterPropertiesView(APIView):
             'sales_status'
         )
         
-        # Apply filters
+        # Apply all filters first (reduces dataset before ordering/annotation)
         queryset = self._apply_filters(queryset, data)
         
         # Apply ordering
         queryset = self._apply_ordering(queryset, data)
         
+        # Add annotation LAST (only on filtered results)
+        queryset = queryset.annotate(
+            subunit_count=Sum('property_units__unit_count')
+        )
+        
         return queryset
 
     def _apply_filters(self, queryset, data):
-        """Apply all filters - using simple JOINs like old version, NOT Exists()"""
+        """Apply all filters to the queryset"""
         
         # Location filters
         if city := data.get("city"):
@@ -183,19 +203,27 @@ class FilterPropertiesView(APIView):
         if prop_type := data.get("property_type"):
             queryset = queryset.filter(property_type__name__icontains=prop_type)
 
-        # Unit type filter - USE SIMPLE JOIN like old version (NOT Exists)
+        # Unit type filter - using Exists subquery (efficient)
         if unit_type := data.get("unit_type"):
-            queryset = queryset.filter(grouped_apartments__unit_type__icontains=unit_type)
+            subquery = GroupedApartment.objects.filter(
+                property_id=OuterRef("pk"),
+                unit_type__icontains=unit_type
+            )
+            queryset = queryset.filter(Exists(subquery))
 
-        # Rooms filter - USE SIMPLE JOIN like old version (NOT Exists)
+        # Rooms filter - FIXED: was missing subquery definition
         if rooms := data.get("rooms"):
-            queryset = queryset.filter(grouped_apartments__rooms=rooms)
+            subquery = GroupedApartment.objects.filter(
+                property_id=OuterRef("pk"),
+                rooms=rooms
+            )
+            queryset = queryset.filter(Exists(subquery))
 
         # Delivery year filter
         if delivery_year := data.get("delivery_year"):
             queryset = self._filter_by_delivery_year(queryset, delivery_year)
 
-        # Price filters
+        # Price filters - indexed fields
         if min_price := data.get("min_price"):
             queryset = queryset.filter(low_price__gte=min_price)
         if max_price := data.get("max_price"):
@@ -257,6 +285,7 @@ class FilterPropertiesView(APIView):
                 Q(title__icontains=title)
             ).order_by('title_priority', '-updated_at')
         else:
+            # Default ordering by updated_at (make sure this column is indexed!)
             queryset = queryset.order_by("-updated_at")
             
         return queryset
