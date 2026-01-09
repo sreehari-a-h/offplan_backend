@@ -15,7 +15,7 @@ from rest_framework.permissions import AllowAny
 
 import calendar
 from datetime import datetime
-from django.db.models import Case, When, Value, IntegerField, Q, Sum, Prefetch
+from django.db.models import Case, When, Value, IntegerField, Q, Sum, Prefetch, Count
 import time
 from django.db import connection, reset_queries
 
@@ -55,46 +55,17 @@ class FilterPropertiesView(APIView):
         
         data = request.data
         
-        # Start with optimized base queryset
-        queryset = Property.objects.select_related(
-            'city',
-            'district',
-            'developer',
-            'property_type',
-            'property_status',
-            'sales_status'
-        )
-        
-        # Apply filters BEFORE annotations to reduce dataset
-        queryset = self._apply_filters(queryset, data)
-        
-        # Get unique property IDs if filtering by grouped apartments
-        if data.get("unit_type") or data.get("rooms"):
-            # Get property IDs first to avoid distinct on the whole queryset
-            property_ids = queryset.values_list('id', flat=True).distinct()
-            queryset = Property.objects.filter(id__in=property_ids).select_related(
-                'city',
-                'district',
-                'developer',
-                'property_type',
-                'property_status',
-                'sales_status'
-            )
-        
-        # Apply ordering
-        queryset = self._apply_ordering(queryset, data)
-        
-        # Add annotation after filtering
-        queryset = queryset.annotate(
-            subunit_count=Sum('property_units__unit_count')
-        )
+        # Build queryset with all optimizations
+        queryset = self._build_queryset(data)
         
         query_time = time.time() - start_time
         print(f"[FILTER] Query building time: {query_time:.2f}s, Queries: {len(connection.queries)}")
         
-        # Paginate results
+        # Paginate results with optimized pagination
         paginator = CustomPagination()
         paginator.request = request
+        
+        # Use only() to fetch only required fields for pagination
         paginated_qs = paginator.paginate_queryset(queryset, request)
         
         paginate_time = time.time() - start_time - query_time
@@ -110,6 +81,32 @@ class FilterPropertiesView(APIView):
         
         return paginator.get_paginated_response(serializer.data)
 
+    def _build_queryset(self, data):
+        """Build optimized queryset with all filters and annotations"""
+        
+        # Start with base queryset
+        queryset = Property.objects.select_related(
+            'city',
+            'district',
+            'developer',
+            'property_type',
+            'property_status',
+            'sales_status'
+        )
+        
+        # Apply filters
+        queryset = self._apply_filters(queryset, data)
+        
+        # Apply ordering BEFORE annotation (important for performance)
+        queryset = self._apply_ordering(queryset, data)
+        
+        # Add annotation last
+        queryset = queryset.annotate(
+            subunit_count=Sum('property_units__unit_count')
+        )
+        
+        return queryset
+
     def _apply_filters(self, queryset, data):
         """Apply all filters to the queryset"""
         
@@ -124,16 +121,17 @@ class FilterPropertiesView(APIView):
         if prop_type := data.get("property_type"):
             queryset = queryset.filter(property_type__name__icontains=prop_type)
 
-        # Unit type and rooms filters - these cause the distinct() issue
+        # Unit type filter - FIXED: Removed distinct(), use Exists properly
         if unit_type := data.get("unit_type"):
             subquery = GroupedApartment.objects.filter(
-            property_id=OuterRef("pk"),
-            unit_type__icontains=unit_type
+                property_id=OuterRef("pk"),
+                unit_type__icontains=unit_type
             )
             queryset = queryset.filter(Exists(subquery))
 
+        # Rooms filter - FIXED: Create proper subquery
         if rooms := data.get("rooms"):
-            GroupedApartment.objects.filter(
+            subquery = GroupedApartment.objects.filter(
                 property_id=OuterRef("pk"),
                 rooms=rooms
             )
