@@ -19,6 +19,10 @@ from django.db.models import Case, When, Value, IntegerField, Q, Sum, Prefetch
 import time
 from django.db import connection, reset_queries
 
+from django.db.models import Exists, OuterRef
+from api.models import GroupedApartment
+
+
 @method_decorator(csrf_exempt, name='dispatch')
 @permission_classes([AllowAny])
 class FilterPropertiesView(APIView):
@@ -122,10 +126,18 @@ class FilterPropertiesView(APIView):
 
         # Unit type and rooms filters - these cause the distinct() issue
         if unit_type := data.get("unit_type"):
-            queryset = queryset.filter(grouped_apartments__unit_type__icontains=unit_type)
+            subquery = GroupedApartment.objects.filter(
+            property_id=OuterRef("pk"),
+            unit_type__icontains=unit_type
+            )
+            queryset = queryset.filter(Exists(subquery))
 
         if rooms := data.get("rooms"):
-            queryset = queryset.filter(grouped_apartments__rooms=rooms)
+            GroupedApartment.objects.filter(
+                property_id=OuterRef("pk"),
+                rooms=rooms
+            )
+            queryset = queryset.filter(Exists(subquery))
 
         # Delivery year filter
         if delivery_year := data.get("delivery_year"):
